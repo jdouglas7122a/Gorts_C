@@ -1,7 +1,7 @@
 #include "parser.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h> // Include for strdup
+#include <string.h>
 
 // Utility function to print AST nodes
 void print_ast_node(ASTNode *node, int depth) {
@@ -16,29 +16,33 @@ void print_ast_node(ASTNode *node, int depth) {
     print_ast_node(node->next, depth + 1);
 }
 
-// Parse a factor (number or parenthesized expression)
+// Parse a factor (number, boolean, or parenthesized expression)
 ASTNode* factor(Lexer *lexer) {
     Token token = lexer->current_token;
     if (token.type == TOKEN_NUMBER) {
         lexer_advance(lexer);
         return init_ast_node(TOKEN_NUMBER, token.value);
+    } else if (token.type == TOKEN_TRUE || token.type == TOKEN_FALSE) {
+        lexer_advance(lexer);
+        return init_ast_node(token.type, token.type == TOKEN_TRUE ? 1 : 0);
     } else if (token.type == TOKEN_LPAREN) {
         lexer_advance(lexer);
         ASTNode *node = parse_expression(lexer);
         if (lexer->current_token.type == TOKEN_RPAREN) {
             lexer_advance(lexer);
         } else {
-            // Error handling: unmatched parenthesis
             printf("Error: unmatched parenthesis\n");
             exit(1);
         }
         return node;
-    } else if (token.type == TOKEN_MINUS) {
+    } else if (token.type == TOKEN_MINUS || token.type == TOKEN_NOT) {
         lexer_advance(lexer);
-        ASTNode *node = init_ast_node(TOKEN_MINUS, 0);
-        node->right = factor(lexer); // Correctly set the right child for unary negation
+        ASTNode *node = init_ast_node(token.type, 0);
+        node->right = factor(lexer); // Handle unary operators
         return node;
     }
+    printf("Error: unknown factor\n"); // Debug: unknown factor
+    exit(1);
     return NULL;
 }
 
@@ -56,8 +60,8 @@ ASTNode* term(Lexer *lexer) {
     return node;
 }
 
-// Parse an expression (addition and subtraction)
-ASTNode* parse_expression(Lexer *lexer) {
+// Parse an arithmetic expression (addition and subtraction)
+ASTNode* arithmetic_expression(Lexer *lexer) {
     ASTNode *node = term(lexer);
     while (lexer->current_token.type == TOKEN_PLUS || lexer->current_token.type == TOKEN_MINUS) {
         Token token = lexer->current_token;
@@ -68,6 +72,68 @@ ASTNode* parse_expression(Lexer *lexer) {
         node = new_node;
     }
     return node;
+}
+
+// Parse an equality expression
+ASTNode* equality(Lexer *lexer) {
+    ASTNode *node = arithmetic_expression(lexer);
+    while (lexer->current_token.type == TOKEN_EQ || lexer->current_token.type == TOKEN_NEQ) {
+        Token token = lexer->current_token;
+        lexer_advance(lexer);
+        ASTNode *new_node = init_ast_node(token.type, 0);
+        new_node->left = node;
+        new_node->right = arithmetic_expression(lexer);
+        node = new_node;
+    }
+    return node;
+}
+
+// Parse a comparison expression
+ASTNode* comparison(Lexer *lexer) {
+    ASTNode *node = equality(lexer);
+    while (lexer->current_token.type == TOKEN_LT || lexer->current_token.type == TOKEN_GT ||
+           lexer->current_token.type == TOKEN_LTE || lexer->current_token.type == TOKEN_GTE) {
+        Token token = lexer->current_token;
+        lexer_advance(lexer);
+        ASTNode *new_node = init_ast_node(token.type, 0);
+        new_node->left = node;
+        new_node->right = equality(lexer);
+        node = new_node;
+    }
+    return node;
+}
+
+// Parse a logical AND expression
+ASTNode* logical_and(Lexer *lexer) {
+    ASTNode *node = comparison(lexer);
+    while (lexer->current_token.type == TOKEN_AND) {
+        Token token = lexer->current_token;
+        lexer_advance(lexer);
+        ASTNode *new_node = init_ast_node(token.type, 0);
+        new_node->left = node;
+        new_node->right = comparison(lexer);
+        node = new_node;
+    }
+    return node;
+}
+
+// Parse a logical OR expression
+ASTNode* logical_or(Lexer *lexer) {
+    ASTNode *node = logical_and(lexer);
+    while (lexer->current_token.type == TOKEN_OR) {
+        Token token = lexer->current_token;
+        lexer_advance(lexer);
+        ASTNode *new_node = init_ast_node(token.type, 0);
+        new_node->left = node;
+        new_node->right = logical_and(lexer);
+        node = new_node;
+    }
+    return node;
+}
+
+// Parse an expression (addition, subtraction, logical operators)
+ASTNode* parse_expression(Lexer *lexer) {
+    return logical_or(lexer);
 }
 
 // Parse a block of statements
@@ -165,18 +231,15 @@ void append_ast_node(ASTNode *parent, ASTNode *child) {
 // Entry point for parsing
 ASTNode* parse(Lexer *lexer) {
     lexer_advance(lexer);
-    // Determine whether we are parsing an expression or a block
     if (lexer->current_token.type == TOKEN_LBRACE) {
         ASTNode *root = parse_block(lexer);
-        // Debug: Print the root node and its children
         printf("Parsed AST Root: type=%d\n", root->type);
-        print_ast_node(root, 0); // Print the entire AST
+        print_ast_node(root, 0);
         return root;
     } else {
         ASTNode *root = parse_expression(lexer);
-        // Debug: Print the root node and its children
         printf("Parsed AST Root: type=%d\n", root->type);
-        print_ast_node(root, 0); // Print the entire AST
+        print_ast_node(root, 0);
         return root;
     }
 }

@@ -5,12 +5,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-// Explicit typedef for size_t as a workaround
-#ifndef _SIZE_T_DEFINED
-typedef unsigned long size_t;
-#define _SIZE_T_DEFINED
-#endif
-
 typedef enum {
     TOKEN_NUMBER,
     TOKEN_PLUS,
@@ -41,7 +35,7 @@ typedef enum {
     TOKEN_LBRACE,
     TOKEN_RBRACE,
     TOKEN_INPUT,
-    TOKEN_VAR // New token for variable declarations
+    TOKEN_VAR
 } TokenType;
 
 typedef struct {

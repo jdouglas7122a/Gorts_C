@@ -1,0 +1,17 @@
+is_running = True
+shopping_list = ""
+
+while (is_running == True) {
+    item = input("add item to shopping list")
+
+    if (item == "")
+    {
+        is_running = False
+    }
+    else
+    {
+        shopping_list = shopping_list + ", " + item
+    }
+}
+
+print shopping_list

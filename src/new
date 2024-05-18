@@ -63,8 +63,6 @@ double evaluate_expression(ASTNode *node) {
     if (!node) return 0;
     printf("Evaluating node: type=%d, value=%f\n", node->type, node->value); // Debug: print node info
 
-    double left_result, right_result;
-
     switch (node->type) {
         case TOKEN_NUMBER:
             return node->value;
@@ -85,56 +83,23 @@ double evaluate_expression(ASTNode *node) {
         case TOKEN_DIV:
             return evaluate_expression(node->left) / evaluate_expression(node->right);
         case TOKEN_EQ:
-            left_result = evaluate_expression(node->left);
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating EQ: left=%f, right=%f\n", left_result, right_result);
-            return left_result == right_result;
+            return evaluate_expression(node->left) == evaluate_expression(node->right);
         case TOKEN_NEQ:
-            left_result = evaluate_expression(node->left);
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating NEQ: left=%f, right=%f\n", left_result, right_result);
-            return left_result != right_result;
+            return evaluate_expression(node->left) != evaluate_expression(node->right);
         case TOKEN_LT:
-            left_result = evaluate_expression(node->left);
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating LT: left=%f, right=%f\n", left_result, right_result);
-            return left_result < right_result;
+            return evaluate_expression(node->left) < evaluate_expression(node->right);
         case TOKEN_GT:
-            left_result = evaluate_expression(node->left);
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating GT: left=%f, right=%f\n", left_result, right_result);
-            return left_result > right_result;
+            return evaluate_expression(node->left) > evaluate_expression(node->right);
         case TOKEN_LTE:
-            left_result = evaluate_expression(node->left);
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating LTE: left=%f, right=%f\n", left_result, right_result);
-            return left_result <= right_result;
+            return evaluate_expression(node->left) <= evaluate_expression(node->right);
         case TOKEN_GTE:
-            left_result = evaluate_expression(node->left);
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating GTE: left=%f, right=%f\n", left_result, right_result);
-            return left_result >= right_result;
-        case TOKEN_AND: {
-            left_result = evaluate_expression(node->left);
-            printf("Evaluating AND: left=%f\n", left_result);
-            if (!left_result) return 0; // Short-circuit evaluation
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating AND: right=%f\n", right_result);
-            return left_result && right_result;
-        }
-        case TOKEN_OR: {
-            left_result = evaluate_expression(node->left);
-            printf("Evaluating OR: left=%f\n", left_result);
-            if (left_result) return 1; // Short-circuit evaluation
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating OR: right=%f\n", right_result);
-            return left_result || right_result;
-        }
-        case TOKEN_NOT: {
-            right_result = evaluate_expression(node->right);
-            printf("Evaluating NOT: right=%f\n", right_result);
-            return !right_result;
-        }
+            return evaluate_expression(node->left) >= evaluate_expression(node->right);
+        case TOKEN_AND:
+            return evaluate_expression(node->left) && evaluate_expression(node->right);
+        case TOKEN_OR:
+            return evaluate_expression(node->left) || evaluate_expression(node->right);
+        case TOKEN_NOT:
+            return !evaluate_expression(node->right);
         default:
             printf("Unknown node type: %d\n", node->type); // Debug: unknown node type
             return 0;
