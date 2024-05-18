@@ -16,12 +16,17 @@ void print_ast_node(ASTNode *node, int depth) {
     print_ast_node(node->next, depth + 1);
 }
 
-// Parse a factor (number, boolean, or parenthesized expression)
+// Parse a factor (number, string, boolean, or parenthesized expression)
 ASTNode* factor(Lexer *lexer) {
     Token token = lexer->current_token;
     if (token.type == TOKEN_NUMBER) {
         lexer_advance(lexer);
         return init_ast_node(TOKEN_NUMBER, token.value);
+    } else if (token.type == TOKEN_STRING) {
+        lexer_advance(lexer);
+        ASTNode *node = init_ast_node(TOKEN_STRING, 0);
+        node->name = token.name; // Store the string value
+        return node;
     } else if (token.type == TOKEN_TRUE || token.type == TOKEN_FALSE) {
         lexer_advance(lexer);
         return init_ast_node(token.type, token.type == TOKEN_TRUE ? 1 : 0);
@@ -60,7 +65,7 @@ ASTNode* term(Lexer *lexer) {
     return node;
 }
 
-// Parse an arithmetic expression (addition and subtraction)
+// Parse an arithmetic expression (addition, subtraction, and string concatenation)
 ASTNode* arithmetic_expression(Lexer *lexer) {
     ASTNode *node = term(lexer);
     while (lexer->current_token.type == TOKEN_PLUS || lexer->current_token.type == TOKEN_MINUS) {

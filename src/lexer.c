@@ -41,6 +41,19 @@ Token number(Lexer *lexer) {
     return (Token){TOKEN_NUMBER, atof(buffer), NULL}; // Initialize name to NULL
 }
 
+Token string(Lexer *lexer) {
+    char buffer[256];
+    int index = 0;
+    advance(lexer); // Skip the opening quote
+    while (current_char(lexer) != '"' && current_char(lexer) != '\0') {
+        buffer[index++] = current_char(lexer);
+        advance(lexer);
+    }
+    buffer[index] = '\0';
+    advance(lexer); // Skip the closing quote
+    return (Token){TOKEN_STRING, 0, strdup(buffer)};
+}
+
 Token identifier_or_keyword(Lexer *lexer) {
     char buffer[64];
     int index = 0;
@@ -70,6 +83,9 @@ Token get_next_token(Lexer *lexer) {
         }
         if (isdigit(current_char(lexer))) {
             return number(lexer);
+        }
+        if (current_char(lexer) == '"') {
+            return string(lexer);
         }
         if (isalpha(current_char(lexer)) || current_char(lexer) == '_') {
             return identifier_or_keyword(lexer);
