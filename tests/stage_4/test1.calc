@@ -1,0 +1,3 @@
+floatTest = 1.0
+floatTest = floatTest + 5
+print floatTest
