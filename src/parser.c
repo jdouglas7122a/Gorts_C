@@ -160,33 +160,54 @@ ASTNode* parse_block(Lexer *lexer) {
 ASTNode* parse_statements(Lexer *lexer) {
     ASTNode *node = parse_statement(lexer);
     ASTNode *root = node;
-    
+
     while (lexer->current_token.type != TOKEN_EOF) {
         ASTNode *next_node = parse_statement(lexer);
         if (!next_node) break;
         node->next = next_node;
         node = next_node;
     }
-    
+
     return root;
 }
 
 // Parse a single statement
 ASTNode* parse_statement(Lexer *lexer) {
+    printf("Parsing statement: current token type = %d\n", lexer->current_token.type);
     if (lexer->current_token.type == TOKEN_PRINT) {
         return parse_print_statement(lexer);
     } else if (lexer->current_token.type == TOKEN_IDENTIFIER) {
-        return parse_assignment_statement(lexer);
-    } else if (lexer->current_token.type == TOKEN_WHILE) {
-        return parse_while_statement(lexer);
-    } else {
-        return parse_expression(lexer); // Handle expression statements
+        Token token = lexer->current_token;
+        lexer_advance(lexer);
+        if (lexer->current_token.type == TOKEN_ASSIGN) {
+            lexer->pos -= 2; // Go back to the beginning of the identifier
+            lexer->current_token = token; // Reset current token
+            return parse_assignment_statement(lexer);
+        } else {
+            lexer->pos -= 1; // Reset lexer position
+            lexer->current_token = token; // Reset current token
+        }
+    } 
+    
+    if (lexer->current_token.type == TOKEN_TRUE || lexer->current_token.type == TOKEN_FALSE || 
+        lexer->current_token.type == TOKEN_LPAREN || lexer->current_token.type == TOKEN_NUMBER || 
+        lexer->current_token.type == TOKEN_STRING || lexer->current_token.type == TOKEN_IDENTIFIER) {
+        // Parse and return the expression as a statement
+        ASTNode *expr = parse_expression(lexer);
+        if (expr) {
+            lexer_advance(lexer); // Ensure lexer advances after parsing the expression
+            return expr;
+        }
     }
+
+    // If no valid statement is found, return NULL (or handle error)
+    printf("Error: unknown statement\n");
     return NULL;
 }
 
 // Parse a print statement
 ASTNode* parse_print_statement(Lexer *lexer) {
+    printf("Parsing print statement\n");
     lexer_advance(lexer); // Advance past 'print'
     ASTNode *expr = parse_expression(lexer); // Parse the expression to print
     return init_ast_node_with_children(TOKEN_PRINT, expr);
@@ -194,11 +215,12 @@ ASTNode* parse_print_statement(Lexer *lexer) {
 
 // Parse an assignment statement
 ASTNode* parse_assignment_statement(Lexer *lexer) {
+    printf("Parsing assignment statement\n");
     Token token = lexer->current_token;
     lexer_advance(lexer); // Advance past identifier
     if (lexer->current_token.type != TOKEN_ASSIGN) {
-        printf("Error: expected '='\n"); // Add error message
-        return NULL; // Error: expected '='
+        printf("Error: expected '='\n");
+        return NULL;
     }
     lexer_advance(lexer); // Advance past '='
     ASTNode *expr = parse_expression(lexer);
@@ -209,6 +231,7 @@ ASTNode* parse_assignment_statement(Lexer *lexer) {
 
 // Parse a while statement
 ASTNode* parse_while_statement(Lexer *lexer) {
+    printf("Parsing while statement\n");
     lexer_advance(lexer); // Advance past 'while'
     ASTNode *condition = parse_expression(lexer);
     ASTNode *body = parse_block(lexer);
@@ -255,5 +278,8 @@ void append_ast_node(ASTNode *parent, ASTNode *child) {
 // Entry point for parsing
 ASTNode* parse(Lexer *lexer) {
     lexer_advance(lexer);
-    return parse_statements(lexer); // Changed to parse multiple statements
+    printf("Starting parsing\n");
+    ASTNode *root = parse_statements(lexer);
+    printf("Finished parsing\n");
+    return root;
 }

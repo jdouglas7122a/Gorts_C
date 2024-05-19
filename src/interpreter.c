@@ -257,7 +257,7 @@ Value evaluate_expression(ASTNode *node) {
         case TOKEN_AND:
             left_result = evaluate_expression(node->left);
             printf("Evaluating AND: left=%f\n", left_result.value.number);
-            if (!left_result.value.number) {
+            if (!left_result.value.boolean) {
                 result.type = VAL_BOOL;
                 result.value.boolean = 0;
                 return result; // Short-circuit evaluation
@@ -265,12 +265,12 @@ Value evaluate_expression(ASTNode *node) {
             right_result = evaluate_expression(node->right);
             printf("Evaluating AND: right=%f\n", right_result.value.number);
             result.type = VAL_BOOL;
-            result.value.boolean = left_result.value.number && right_result.value.number;
+            result.value.boolean = left_result.value.boolean && right_result.value.boolean;
             return result;
         case TOKEN_OR:
             left_result = evaluate_expression(node->left);
             printf("Evaluating OR: left=%f\n", left_result.value.number);
-            if (left_result.value.number) {
+            if (left_result.value.boolean) {
                 result.type = VAL_BOOL;
                 result.value.boolean = 1;
                 return result; // Short-circuit evaluation
@@ -278,13 +278,13 @@ Value evaluate_expression(ASTNode *node) {
             right_result = evaluate_expression(node->right);
             printf("Evaluating OR: right=%f\n", right_result.value.number);
             result.type = VAL_BOOL;
-            result.value.boolean = left_result.value.number || right_result.value.number;
+            result.value.boolean = left_result.value.boolean || right_result.value.boolean;
             return result;
         case TOKEN_NOT:
             right_result = evaluate_expression(node->right);
             printf("Evaluating NOT: right=%f\n", right_result.value.number);
             result.type = VAL_BOOL;
-            result.value.boolean = !right_result.value.number;
+            result.value.boolean = !right_result.value.boolean;
             return result;
         default:
             printf("Unknown node type: %d\n", node->type); // Debug: unknown node type

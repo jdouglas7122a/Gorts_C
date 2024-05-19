@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 
     if (root) {
         printf("Parsed AST:\n");
-        print_ast_node(root, 0);  // This should now be correctly declared
+        print_ast_node(root, 0);
         interpret(root);
         free_ast(root);
     } else {
