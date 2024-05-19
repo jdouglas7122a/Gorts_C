@@ -42,11 +42,17 @@ int main(int argc, char *argv[]) {
     Lexer *lexer = init_lexer(source);
     ASTNode *root = parse(lexer);
 
-    interpret(root);
+    if (root) {
+        printf("Parsed AST:\n");
+        print_ast_node(root, 0);  // This should now be correctly declared
+        interpret(root);
+        free_ast(root);
+    } else {
+        printf("Failed to parse source code.\n");
+    }
 
     free(source);
     free(lexer);
-    free_ast(root);
 
     return 0;
 }

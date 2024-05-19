@@ -30,6 +30,13 @@ void skip_whitespace(Lexer *lexer) {
     }
 }
 
+// Add this to handle newlines
+void skip_newline(Lexer *lexer) {
+    while (current_char(lexer) == '\n' || current_char(lexer) == '\r') {
+        advance(lexer);
+    }
+}
+
 Token number(Lexer *lexer) {
     char buffer[64];
     int index = 0;
@@ -75,10 +82,15 @@ Token identifier_or_keyword(Lexer *lexer) {
     return (Token){TOKEN_IDENTIFIER, 0, strdup(buffer)};
 }
 
+// In the get_next_token function, add support for newlines
 Token get_next_token(Lexer *lexer) {
     while (current_char(lexer) != '\0') {
         if (isspace(current_char(lexer))) {
             skip_whitespace(lexer);
+            continue;
+        }
+        if (current_char(lexer) == '\n' || current_char(lexer) == '\r') {
+            skip_newline(lexer); // Added support for newlines
             continue;
         }
         if (isdigit(current_char(lexer))) {

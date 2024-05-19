@@ -1,2 +1,3 @@
-stringCatTest = "10 corgis"
+stringCatTest = "10 corgis "
 stringCatTest = stringCatTest + 5 + " more corgis"
+print stringCatTest

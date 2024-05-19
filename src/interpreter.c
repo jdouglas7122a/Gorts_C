@@ -3,6 +3,44 @@
 #include <string.h>
 #include <stdlib.h>
 
+// Define a structure for a variable
+typedef struct {
+    char *name;
+    Value value;
+} Variable;
+
+#define MAX_GLOBALS 100 // Maximum number of global variables
+Variable globals[MAX_GLOBALS];
+int global_count = 0;
+
+// Get the value of a variable
+Value get_variable_value(const char *name) {
+    for (int i = 0; i < global_count; i++) {
+        if (strcmp(globals[i].name, name) == 0) {
+            return globals[i].value;
+        }
+    }
+    fprintf(stderr, "Undefined variable: %s\n", name);
+    exit(1);
+}
+
+// Set the value of a variable
+void set_variable_value(const char *name, Value value) {
+    for (int i = 0; i < global_count; i++) {
+        if (strcmp(globals[i].name, name) == 0) {
+            globals[i].value = value;
+            return;
+        }
+    }
+    if (global_count >= MAX_GLOBALS) {
+        fprintf(stderr, "Too many global variables\n");
+        exit(1);
+    }
+    globals[global_count].name = strdup(name);
+    globals[global_count].value = value;
+    global_count++;
+}
+
 // Interpret an AST node
 void interpret(ASTNode *node) {
     if (!node) return;
@@ -12,10 +50,17 @@ void interpret(ASTNode *node) {
             interpret_print(node);
             break;
         case TOKEN_ASSIGN:
-            // Implement variable assignment interpretation here
+            {
+                Value value = evaluate_expression(node->left);
+                set_variable_value(node->name, value);
+            }
             break;
         case TOKEN_WHILE:
-            // Implement while loop interpretation here
+            {
+                while (evaluate_expression(node->left).value.boolean) {
+                    interpret(node->body);
+                }
+            }
             break;
         default:
             if (node->type == TOKEN_PLUS || node->type == TOKEN_MINUS ||
@@ -43,6 +88,8 @@ void interpret(ASTNode *node) {
             }
             break;
     }
+
+    interpret(node->next); // Continue to the next statement in the sequence
 }
 
 // Interpret a print statement
@@ -62,6 +109,25 @@ void interpret_print(ASTNode *node) {
                 break;
         }
     }
+}
+
+// Function to convert a number to a string
+char* number_to_string(double number) {
+    char buffer[64];
+    snprintf(buffer, sizeof(buffer), "%f", number);
+    return strdup(buffer);
+}
+
+// Function to convert a value to a string
+char* value_to_string(Value value) {
+    if (value.type == VAL_STRING) {
+        return strdup(value.value.string);
+    } else if (value.type == VAL_NUMBER) {
+        return number_to_string(value.value.number);
+    } else if (value.type == VAL_BOOL) {
+        return strdup(value.value.boolean ? "True" : "False");
+    }
+    return strdup("");
 }
 
 // Evaluate an expression
@@ -94,15 +160,19 @@ Value evaluate_expression(ASTNode *node) {
             result.type = VAL_BOOL;
             result.value.boolean = 0;
             return result;
+        case TOKEN_IDENTIFIER:
+            return get_variable_value(node->name); // Retrieve the value of a variable
         case TOKEN_PLUS:
             left_result = evaluate_expression(node->left);
             right_result = evaluate_expression(node->right);
             if (left_result.type == VAL_STRING || right_result.type == VAL_STRING) {
-                left_str = left_result.type == VAL_STRING ? left_result.value.string : "";
-                right_str = right_result.type == VAL_STRING ? right_result.value.string : "";
+                left_str = value_to_string(left_result);
+                right_str = value_to_string(right_result);
                 char *result_str = malloc(strlen(left_str) + strlen(right_str) + 1);
                 strcpy(result_str, left_str);
                 strcat(result_str, right_str);
+                free(left_str);
+                free(right_str);
                 result.type = VAL_STRING;
                 result.value.string = result_str;
                 return result;
@@ -131,9 +201,11 @@ Value evaluate_expression(ASTNode *node) {
             right_result = evaluate_expression(node->right);
             result.type = VAL_BOOL;
             if (left_result.type == VAL_STRING || right_result.type == VAL_STRING) {
-                left_str = left_result.type == VAL_STRING ? left_result.value.string : "";
-                right_str = right_result.type == VAL_STRING ? right_result.value.string : "";
+                left_str = value_to_string(left_result);
+                right_str = value_to_string(right_result);
                 result.value.boolean = strcmp(left_str, right_str) == 0;
+                free(left_str);
+                free(right_str);
             } else {
                 printf("Evaluating EQ: left=%f, right=%f\n", left_result.value.number, right_result.value.number);
                 result.value.boolean = left_result.value.number == right_result.value.number;
@@ -144,9 +216,11 @@ Value evaluate_expression(ASTNode *node) {
             right_result = evaluate_expression(node->right);
             result.type = VAL_BOOL;
             if (left_result.type == VAL_STRING || right_result.type == VAL_STRING) {
-                left_str = left_result.type == VAL_STRING ? left_result.value.string : "";
-                right_str = right_result.type == VAL_STRING ? right_result.value.string : "";
+                left_str = value_to_string(left_result);
+                right_str = value_to_string(right_result);
                 result.value.boolean = strcmp(left_str, right_str) != 0;
+                free(left_str);
+                free(right_str);
             } else {
                 printf("Evaluating NEQ: left=%f, right=%f\n", left_result.value.number, right_result.value.number);
                 result.value.boolean = left_result.value.number != right_result.value.number;
